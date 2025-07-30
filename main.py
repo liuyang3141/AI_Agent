@@ -1,8 +1,13 @@
 import os
 from dotenv import load_dotenv
 from google import genai
+import sys
 
 def main():
+    # Check to see if a prompt has been provided.
+    if len(sys.argv) <= 1:
+        raise Exception("No prompt provided.")
+
     # Load environmental variable .env, where the API key is stored.
     load_dotenv()
 
@@ -14,7 +19,7 @@ def main():
 
     # Use the client.models.generate_content() method to get a response
     # from the gemini-2.0-flash-001 model.
-    response = client.models.generate_content(model='gemini-2.0-flash-001', contents="Why is Boot.dev such a great place to learn backend development? Use one paragraph maximum.")
+    response = client.models.generate_content(model='gemini-2.0-flash-001', contents=sys.argv[1])
 
     # Print the response.
     print(response.text)
