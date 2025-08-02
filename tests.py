@@ -1,6 +1,7 @@
 from functions.write_file import *
 from functions.get_file_content import *
 from functions.get_files_info import *
+from functions.run_python import *
 
 def main():
     """
@@ -19,8 +20,16 @@ def main():
     print(get_file_content("calculator", "pkg/does_not_exist.py"))
     """
 
+    """
     print(write_file("calculator", "lorem.txt", "wait, this isn't lorem ipsum"))
     print(write_file("calculator", "pkg/morelorem.txt", "lorem ipsum dolor sit amet"))
     print(write_file("calculator", "/tmp/temp.txt", "this should not be allowed"))
+    """
+
+    print(run_python_file("calculator", "main.py"))
+    print(run_python_file("calculator", "main.py", ["3 + 5"]))
+    print(run_python_file("calculator", "tests.py"))
+    print(run_python_file("calculator", "../main.py"))
+    print(run_python_file("calculator", "nonexistent.py"))
 if __name__ == "__main__":
     main()
