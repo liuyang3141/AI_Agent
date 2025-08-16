@@ -5,6 +5,7 @@ import sys # Check for arguments in the command line.
 import argparse # Check if specific arguments were entered in the command line.
 import os # Check environmental variable .env for API key.
 from call_function import *
+from config import MAX_ITERATIONS
 
 def main():
     # Load environmental variable .env, where the API key is stored.
@@ -42,9 +43,27 @@ def main():
     client = genai.Client(api_key=api_key)
 
     # Create a new list of types.Content, and set the user's prompt as the only message.
-    messages = [types.Content(role="user", parts=[types.Part(text=user_prompt)])]
+    messages = [types.Content(role="user", parts=[types.Part(text="")])]
+    messages.append(types.Content(role = "user", parts = [types.Part(text = user_prompt)]))
 
-    generate_content(client, messages, verbose_flag)
+    # Main loop for multi-turn conversations
+    loop_count = 0
+
+    while(loop_count < MAX_ITERATIONS):
+        loop_count += 1
+
+        if loop_count > MAX_ITERATIONS:
+            print(f"Maximum iterations ({MAX_ITERATIONS}) reached.")
+            sys.exit(1)
+        try:
+            response = generate_content(client, messages, verbose_flag)
+
+            if response:
+                print("Final response:")
+                print(response)
+                break
+        except Exception as e:
+            return f"Error executing generate_content function: {e}"
 
 def generate_content(client, messages, verbose_flag):
     # Use the client.models.generate_content() method to get a response
@@ -56,15 +75,25 @@ def generate_content(client, messages, verbose_flag):
         ),
     )
 
+    # Print the following if verbose_flag = True
     if verbose_flag:
-        # Print the following if verbose_flag = True
         # Print tokens in the prompt.
         print(f"Prompt tokens: {response.usage_metadata.prompt_token_count}")
         # Print tokens in the response.
         print(f"Response tokens: {response.usage_metadata.candidates_token_count}")
 
+    # Add the response from LLM to the messages list.
+    if response.candidates:
+        for candidate in response.candidates:
+            messages.append(candidate.content)
+
+    # If no function call was made, return result.
+    if not response.function_calls:
+        return response.text
+
     # Get a list of the functions called by the LLM.
     function_responses = list()
+
 
     for function_call_part in response.function_calls:
         function_call_result = call_function(function_call_part, verbose_flag)
@@ -74,11 +103,25 @@ def generate_content(client, messages, verbose_flag):
             raise Exception("Empty function call result.")
         if verbose_flag:
             print(f"-> {function_call_result.parts[0].function_response.response}")
-            function_responses.append(function_call_result.parts[0])
+
         function_responses.append(function_call_result.parts[0])
 
-    if not function_responses:
-        raise Exception("No function responses generated, exiting.")
+        if not function_responses:
+            raise Exception("No function responses generated, exiting.")
+
+        # Convert the function result into a types.Content object.
+        function_response_content = types.Content(
+            role = "user", # Use "user" role for function responses sent back to the LLM
+            parts = function_responses
+        )
+
+        # Append the function response to the messages list.
+        messages.append(function_response_content)
+
+
+
+
+
 
 
 
