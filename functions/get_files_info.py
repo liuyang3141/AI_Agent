@@ -1,4 +1,5 @@
 import os
+from google.genai import types
 
 def get_directory_size(path):
     total_size = 0
@@ -26,29 +27,31 @@ def get_files_info(working_directory, directory="."):
     if not os.path.isdir(abs_target_dir):
         return f'Error: "{directory}" is not a directory'
 
-    items_info = [f"Result for {'current directory' if directory == '.' else f"'{directory}' directory:"}"]
-    for item_name in os.listdir(abs_target_dir):
-        item_path = os.path.join(abs_target_dir, item_name)
-        if os.path.isfile(item_path):
-            try:
-                size = os.path.getsize(item_path)
-                items_info.append(f"\t- {item_name}: file_size={size} bytes, is_dir={os.path.isdir(item_path)}")
-            except FileNotFoundError:
-                items_info.append("\tError: The file was not found.")
-            except PermissionError:
-                items_info.append("\tError: You don't have permission to access this file.")
-            except OSError as e:
-                # This will catch any other OSError that isn't specifically handled above
-                items_info.append(f"\tError: {e}")
-        elif os.path.isdir(item_path):
-            try:
-                size = get_directory_size(item_path)
-                items_info.append(f"\t- {item_name}: file_size={size} bytes, is_dir={os.path.isdir(item_path)}")
-            except FileNotFoundError:
-                items_info.append("\tError: The file was not found.")
-            except PermissionError:
-                items_info.append("\tError: You don't have permission to access this file.")
-            except OSError as e:
-                # This will catch any other OSError that isn't specifically handled above
-                items_info.append(f"\tError: {e}")
-    return "\n".join(items_info)
+    try:
+        items_info = []
+
+        for item_name in os.listdir(abs_target_dir):
+            item_path = os.path.join(abs_target_dir, item_name)
+            size = os.path.getsize(item_path)
+            is_dir = os.path.isdir(item_path)
+            items_info.append(f"- {item_name}: file_size={size} bytes, is_dir={is_dir}")
+
+        return "\n".join(items_info)
+
+    except Exception as e:
+        return f"Error listing files: {e}"
+
+
+schema_get_files_info = types.FunctionDeclaration(
+    name = "get_files_info",
+    description = "Lists files in the specified directory along with their sizes, constrained to the working directory.",
+    parameters = types.Schema(
+        type = types.Type.OBJECT,
+        properties = {
+            "directory": types.Schema(
+                type = types.Type.STRING,
+                description = "The directory to list files from, relative to the working directory. If not provided, lists files in the working directory itself.",
+            )
+        }
+    )
+)

@@ -1,5 +1,6 @@
 import os
-from functions.config import *
+from config import MAX_CHARS
+from google.genai import types
 
 def get_file_content(working_directory, file_path):
     abs_working_dir = os.path.abspath(working_directory)
@@ -23,3 +24,17 @@ def get_file_content(working_directory, file_path):
         return content
     except Exception as e:
         return f'Error: {e}'
+
+schema_get_file_content = types.FunctionDeclaration(
+    name = "get_file_content",
+    description = "Read the content of the file specified, up to the first 10000 characters and constrained to the working directory.",
+    parameters = types.Schema(
+        type = types.Type.OBJECT,
+        properties = {
+            "file_path": types.Schema(
+                type = types.Type.STRING,
+                description = "The path to the file where the contents can be read from, relative to the working directory."
+            )
+        }
+    )
+)
